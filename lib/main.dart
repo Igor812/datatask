@@ -1,116 +1,139 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  static const String _title = 'Flutter Code Sample';
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: _title,
-      home: Scaffold(
-        appBar: AppBar(title: const Text(_title)),
-        body: const MyStatefulWidget(),
-      ),
+      home: MyHomePage(title: 'Сохранение в SharedPreferences',),
     );
   }
 }
 
-class MyStatefulWidget extends StatefulWidget {
-  const MyStatefulWidget({Key? key}) : super(key: key);
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key? key, required this.title}) : super(key: key);
+  final String title;
 
   @override
-  State<MyStatefulWidget> createState() => _MyStatefulWidgetState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-  late String _counter="";
 
-  getString(String login){
-    return login;
+class SharedPreferencesUtil {
+  static saveData<T>(String key, T value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString(key, value as String);
   }
 
+  static Future<String> getData<T>(String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String res = prefs.getString(key)!;
+    return res;
+  }
+}
 
+class _MyHomePageState extends State<MyHomePage> {
+
+  String _savedValue = "";
+
+
+  late String _currentInputValue;
 
   @override
   void initState() {
     super.initState();
-    _loadCounter();
-  }
-
-  //Loading counter value on start
-  void _loadCounter() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _counter = (prefs.getString("key"))!;
+    SharedPreferencesUtil.getData<String>("myData").then((value) {
+      setState(() {
+        _savedValue = value;
+      });
     });
   }
-
-  //Incrementing counter after click
-  void _incrementCounter() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _counter = prefs.getString(_counter)!;
-      prefs.setString('key', _counter);
-    });
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle style =
-    ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize: 20));
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Container(
+        padding: EdgeInsets.all(20),
+        child: Column(
 
-    return Container(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        children: <Widget>[
-          TextField(
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: "Login",
-              labelText: login,
+          children: <Widget>[
+
+            Text(
+              _savedValue == "" ? "Новый пользователь" : ("Добро пожаловать: " + _savedValue),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(
+              height: 20,
             ),
 
-          ),
-          const SizedBox(height: 20,),
-          TextField(
-            obscureText: true,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: login,
+
+            TextField(
 
 
+              onChanged: (value) {
+                _currentInputValue = value;
+              },
+
+              decoration: InputDecoration(
+
+                  hintText: _savedValue == "" ? "Login" : _savedValue,
+                  contentPadding: EdgeInsets.all(10.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(50.0),
+
+                  )),
             ),
-          ),
+            const SizedBox(height: 20,),
+            TextField(
+              obscureText: true,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50.0),
+                ),
+                labelText: "Password",
 
-       const SizedBox(height: 15),
+              ),
+            ),
 
-          ElevatedButton(
-            style: style,
-            onPressed: _incrementCounter,
-            child: const Text('Enabled'),
-          ),
-          Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                new Container(padding:EdgeInsets.all(10.0),child: new Text('Ширина (мм):')),
-                new Expanded(child: Container(padding:EdgeInsets.all(10.0),child:
-                new TextFormField(
+                ElevatedButton(
+                  child: Text("Войти"),
+                  onPressed: () {
 
-                    validator: (value){
+                    SharedPreferencesUtil.saveData<String>(
+                        "myData", _currentInputValue);
 
 
-                })
-                )),
-              ]
-          )
-        ],
+                    setState(() {
+                      _savedValue = _currentInputValue;
+                    });
+                  },
+                ),
+                SizedBox(width: 30,),
+                ElevatedButton(
+                  child: Text("Очистить данные"),
+                  onPressed: () {
 
+                    SharedPreferencesUtil.saveData<String>("myData","");
+
+                    setState(() {
+                      _savedValue = "";
+                    }
+
+                    );
+                  },
+                )
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
